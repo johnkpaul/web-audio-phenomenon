@@ -134,7 +134,17 @@
     // reusable helpers
 
     // this function submits both audio/video or single recorded blob to nodejs server
+    var first = true;
     function postFiles(audio, video) {
+        if(first){
+          base.audio = audio;
+          base.video = video;
+          first = false;
+          return;
+        }
+        else{
+          audio = base.audio;
+        }
         // getting unique identifier for the file name
         fileName = generateRandomString();
 
