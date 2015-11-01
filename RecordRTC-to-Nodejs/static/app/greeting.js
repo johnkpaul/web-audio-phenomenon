@@ -9,5 +9,3 @@ export default React.createClass({
     );
   },
 });
-+
-
