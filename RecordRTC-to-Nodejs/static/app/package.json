@@ -10,7 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "react": "^0.14.1",
-    "react-dom": "^0.14.1"
+    "react-dom": "^0.14.1",
+    "web-audio-scheduler": "^0.2.2"
   },
   "devDependencies": {
     "babel-core": "^6.0.14",

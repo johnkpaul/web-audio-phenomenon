@@ -58,6 +58,10 @@
 
 	var _viewport2 = _interopRequireDefault(_viewport);
 
+	var _metronome = __webpack_require__(162);
+
+	var _metronome2 = _interopRequireDefault(_metronome);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	_reactDom2.default.render(_react2.default.createElement(_viewport2.default, { name: "World" }), document.getElementById('app'));
@@ -19677,7 +19681,7 @@
 /* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -19689,20 +19693,24 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var steps = ['Accept video/audio recording', 'Position your face', 'Start recording'];
+	var steps = ['Position your face in the camera view. You\'ll need to stay still through this', "Click on start recording with your face in position. A metronome will start and you should say the word \"vase\" at every tick", "After 10 seconds of the word \"vase\", the background will flash red", "Click on start recording again and say the word \"base\" at the same regular interval", "After 10 seconds, your McGurk video will be processed and linked below"];
 
 	exports.default = _react2.default.createClass({
 	  render: function render() {
-	    debugger;
 	    return _react2.default.createElement(
-	      'div',
-	      { className: 'steps' },
+	      "div",
+	      { className: "steps" },
 	      _react2.default.createElement(
-	        'ul',
+	        "h1",
+	        null,
+	        "Steps to create your own McGurk video"
+	      ),
+	      _react2.default.createElement(
+	        "ol",
 	        null,
 	        steps.map(function (step, i) {
 	          return _react2.default.createElement(
-	            'li',
+	            "li",
 	            { key: i },
 	            step
 	          );
@@ -19711,6 +19719,292 @@
 	    );
 	  }
 	});
+
+/***/ },
+/* 162 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _webAudioScheduler = __webpack_require__(163);
+
+	var _webAudioScheduler2 = _interopRequireDefault(_webAudioScheduler);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var audioContext = new AudioContext();
+	var scheduler = new _webAudioScheduler2.default({
+	  context: audioContext
+	});
+
+	function metronome(e) {
+	  scheduler.insert(e.playbackTime + 0.000, ticktack, [880, 1.00]);
+	  scheduler.insert(e.playbackTime + 1.000, ticktack, [880, 1.00]);
+	  scheduler.insert(e.playbackTime + 2.000, metronome);
+	}
+
+	function ticktack(e, freq, dur) {
+	  var t0 = e.playbackTime;
+	  var t1 = t0 + dur;
+	  var osc = audioContext.createOscillator();
+	  var amp = audioContext.createGain();
+
+	  osc.frequency.value = freq;
+	  amp.gain.setValueAtTime(0.5, t0);
+	  amp.gain.exponentialRampToValueAtTime(1e-6, t1);
+
+	  osc.start(t0);
+
+	  osc.connect(amp);
+	  amp.connect(audioContext.destination);
+
+	  scheduler.insert(t1, function (e) {
+	    osc.stop(e.playbackTime);
+	    scheduler.nextTick(function () {
+	      osc.disconnect();
+	      amp.disconnect();
+	    });
+	  });
+	}
+
+	function start() {
+	  scheduler.start(metronome);
+	}
+
+	function stop() {
+	  scheduler.stop(true);
+	}
+	window.startMetronome = function () {
+	  setTimeout(start, 500);
+	};
+	window.stopMetronome = stop;
+	//start();
+
+/***/ },
+/* 163 */
+/***/ function(module, exports) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
+
+	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	"use strict";
+
+	var AudioContext = global.AudioContext || global.webkitAudioContext;
+
+	function defaults(value, defaultValue) {
+	  return value !== undefined ? value : defaultValue;
+	}
+
+	/**
+	 * @class WebAudioScheduler
+	 */
+
+	var WebAudioScheduler = (function () {
+	  /**
+	   * @constructor
+	   * @param {object} opts
+	   * @public
+	   */
+
+	  function WebAudioScheduler() {
+	    var opts = arguments[0] === undefined ? {} : arguments[0];
+
+	    _classCallCheck(this, WebAudioScheduler);
+
+	    this.context = opts.context || new AudioContext();
+	    this.interval = +defaults(opts.interval, 0.025);
+	    this.aheadTime = +defaults(opts.aheadTime, 0.1);
+	    this.offsetTime = +defaults(opts.offsetTime, 0.005);
+	    this.timerAPI = defaults(opts.timerAPI, global);
+	    this.toSeconds = defaults(opts.toSeconds, function (value) {
+	      return +value;
+	    });
+	    this.playbackTime = 0;
+
+	    this._timerId = 0;
+	    this._schedId = 0;
+	    this._events = [];
+	  }
+
+	  _createClass(WebAudioScheduler, [{
+	    key: "currentTime",
+
+	    /**
+	    * Current time of the audio context
+	    * @type {number}
+	    * @public
+	    */
+	    get: function () {
+	      return this.context.currentTime;
+	    }
+	  }, {
+	    key: "events",
+
+	    /**
+	     * Sorted list of scheduled items
+	     * @type {object[]}
+	     * @public
+	     */
+	    get: function () {
+	      return this._events.slice();
+	    }
+	  }, {
+	    key: "start",
+
+	    /**
+	     * Start the scheduler timeline.
+	     * @param {function} callback
+	     * @return {WebAudioScheduler} self
+	     * @public
+	     */
+	    value: function start(callback) {
+	      var _this = this;
+
+	      if (this._timerId === 0) {
+	        this._timerId = this.timerAPI.setInterval(function () {
+	          var t0 = _this.context.currentTime;
+	          var t1 = t0 + _this.aheadTime;
+
+	          _this._process(t0, t1);
+	        }, this.interval * 1000);
+	      }
+	      if (callback) {
+	        this.insert(0, callback);
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: "stop",
+
+	    /**
+	     * Stop the scheduler timeline.
+	     * @param {boolean} reset
+	     * @return {WebAudioScheduler} self
+	     * @public
+	     */
+	    value: function stop(reset) {
+	      if (this._timerId !== 0) {
+	        this.timerAPI.clearInterval(this._timerId);
+	        this._timerId = 0;
+	      }
+	      if (reset) {
+	        this._events.splice(0);
+	      }
+	      return this;
+	    }
+	  }, {
+	    key: "insert",
+
+	    /**
+	     * Insert the callback function into the scheduler timeline.
+	     * @param {number} time
+	     * @param {function(object)} callback
+	     * @param {*[]} args
+	     * @return {number} schedId
+	     * @public
+	     */
+	    value: function insert(time, callback, args) {
+	      time = this.toSeconds(time, this);
+
+	      this._schedId += 1;
+
+	      var event = {
+	        id: this._schedId,
+	        time: time,
+	        callback: callback,
+	        args: args
+	      };
+	      var events = this._events;
+
+	      if (events.length === 0 || events[events.length - 1].time <= time) {
+	        events.push(event);
+	      } else {
+	        for (var i = 0, imax = events.length; i < imax; i++) {
+	          if (time < events[i].time) {
+	            events.splice(i, 0, event);
+	            break;
+	          }
+	        }
+	      }
+
+	      return event.id;
+	    }
+	  }, {
+	    key: "nextTick",
+
+	    /**
+	     * Insert the callback function at next tick.
+	     * @param {function(object)} callback
+	     * @param {*[]} args
+	     * @return {number} schedId
+	     * @public
+	     */
+	    value: function nextTick(callback, args) {
+	      return this.insert(this.playbackTime + this.aheadTime, callback, args);
+	    }
+	  }, {
+	    key: "remove",
+
+	    /**
+	     * Remove the callback function from the scheduler timeline.
+	     * @param {number} schedId
+	     * @return {number} schedId
+	     * @public
+	     */
+	    value: function remove(schedId) {
+	      var events = this._events;
+
+	      if (typeof schedId === "undefined") {
+	        events.splice(0);
+	      } else {
+	        for (var i = 0, imax = events.length; i < imax; i++) {
+	          if (schedId === events[i].id) {
+	            events.splice(i, 1);
+	            break;
+	          }
+	        }
+	      }
+
+	      return schedId;
+	    }
+	  }, {
+	    key: "_process",
+
+	    /**
+	     * @private
+	     */
+	    value: function _process(t0, t1) {
+	      var events = this._events;
+
+	      this.playbackTime = t0;
+
+	      while (events.length && events[0].time < t1) {
+	        var _event = events.shift();
+
+	        this.playbackTime = Math.max(this.context.currentTime, _event.time) + this.offsetTime;
+
+	        _event.callback.apply(this, [{
+	          target: this,
+	          playbackTime: this.playbackTime
+	        }].concat(_event.args));
+	      }
+
+	      this.playbackTime = t0;
+	    }
+	  }]);
+
+	  return WebAudioScheduler;
+	})();
+
+	exports["default"] = WebAudioScheduler;
+	module.exports = exports["default"];
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ }
 /******/ ]);

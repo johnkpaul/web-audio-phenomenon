@@ -48,5 +48,5 @@ if(!PLAY) return;
             tick = (tick + 1) % notesPerBeat;
         }
     });
-
+window.dev = dev;
 }, true);

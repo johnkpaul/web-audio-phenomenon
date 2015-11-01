@@ -54,7 +54,7 @@
     </p>
     <hr />
 
-    <div>
+    <div style="display:none">
         <label id="percentage">0%</label>
         <progress id="progress-bar" value="0"></progress>
         <br />
@@ -94,7 +94,7 @@
     // Don't need to create multiple instances of the RecordRTC for Firefox
     // You can even use below property to force recording only audio blob on chrome
     // var isRecordOnlyAudio = true;
-    var isRecordOnlyAudio = !!navigator.mozGetUserMedia;
+    var isRecordOnlyAudio = false;
 
     // if recording only audio, we should replace "HTMLVideoElement" with "HTMLAudioElement"
     if (isRecordOnlyAudio && currentBrowser == 'chromium') {
@@ -157,7 +157,7 @@
             videoElement.controls = true;
 
             var h2 = document.createElement('h2');
-            h2.innerHTML = '<a href="' + videoElement.src + '">' + videoElement.src + '</a>';
+            h2.innerHTML = '<a download="mcgurk.webm" href="' + videoElement.src + '">Download your McGurk video!</a>';
             document.body.appendChild(h2);
         });
 
@@ -234,6 +234,13 @@
             video: true
         };
 
+        if(navigator.mozGetUserMedia){
+          navigator.mozGetUserMedia(session, success_callback, function(error) {
+              alert(JSON.stringify(error));
+          });
+          return;
+        }
+
         navigator.getUserMedia(session, success_callback, function(error) {
             alert(JSON.stringify(error));
         });
@@ -242,43 +249,51 @@
 
     <script>
     // UI events handling
+    captureUserMedia(function(stream) {
+        mediaStream = stream;
+
+        videoElement.src = window.URL.createObjectURL(stream);
+        videoElement.play();
+        videoElement.muted = true;
+        videoElement.controls = false;
+
+    });
     btnStartRecording.onclick = function() {
         btnStartRecording.disabled = true;
+        var audioConfig = {};
+        if (!isRecordOnlyAudio) {
+        }
 
-        captureUserMedia(function(stream) {
-            mediaStream = stream;
+        audioRecorder = RecordRTC(mediaStream, audioConfig);
 
-            videoElement.src = window.URL.createObjectURL(stream);
-            videoElement.play();
-            videoElement.muted = true;
-            videoElement.controls = false;
-
+        if (!isRecordOnlyAudio) {
             // it is second parameter of the RecordRTC
-            var audioConfig = {};
-            if (!isRecordOnlyAudio) {
-            }
+            var videoConfig = {
+                type: 'video'
+            };
+            videoRecorder = RecordRTC(mediaStream, videoConfig);
+        }
 
-            audioRecorder = RecordRTC(stream, audioConfig);
-
-            if (!isRecordOnlyAudio) {
-                // it is second parameter of the RecordRTC
-                var videoConfig = {
-                    type: 'video'
-                };
-                videoRecorder = RecordRTC(stream, videoConfig);
-            }
-
-            videoRecorder.initRecorder(function() {
-              audioRecorder.initRecorder(function() {
-                // Both recorders are ready to record things accurately
-                videoRecorder.startRecording();
-                audioRecorder.startRecording();
-              });
-            });
-
-            // enable stop-recording button
-            btnStopRecording.disabled = false;
+        videoRecorder.initRecorder(function() {
+          audioRecorder.initRecorder(function() {
+            // Both recorders are ready to record things accurately
+            videoRecorder.startRecording();
+            audioRecorder.startRecording();
+          });
         });
+
+        // enable stop-recording button
+        btnStopRecording.disabled = false;
+        window.startMetronome();
+        setTimeout(function(){
+          document.body.style.background = 'red';
+          setTimeout(function(){
+            document.body.style.background = 'white';
+          }, 500);
+          btnStopRecording.onclick();
+          window.stopMetronome();
+        }, 10000);
+
     };
 
 

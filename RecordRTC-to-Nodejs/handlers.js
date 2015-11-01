@@ -157,8 +157,8 @@ function ifMac(response, files) {
             response.end(files.audio.name.split('.')[0] + '-merged.webm');
 
             // removing audio/video files
-            //fs.unlink(audioFile);
-            //fs.unlink(videoFile);
+            fs.unlink(audioFile);
+            fs.unlink(videoFile);
         }
 
     });
