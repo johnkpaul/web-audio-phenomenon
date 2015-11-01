@@ -3,7 +3,9 @@
 // Source Code   - github.com/muaz-khan/WebRTC-Experiment/tree/master/RecordRTC/RecordRTC-to-Nodejs
 
 var config = require('./config'),
-    http = require('http'),
+    fs = require('fs'),
+    https = require('https'),
+    //http = require('http'),
     url = require('url');
 
 function start(route, handle) {
@@ -23,8 +25,12 @@ function start(route, handle) {
             route(handle, pathname, response, postData);
         });
     }
-
-    http.createServer(onRequest).listen(config.port);
+    var options = {
+      key: fs.readFileSync('key.pem'),
+      cert: fs.readFileSync('cert.pem')
+    };
+    //http.createServer(onRequest).listen(config.port);
+    https.createServer(options, onRequest).listen(config.port);
 }
 
 exports.start = start;

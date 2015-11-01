@@ -54,13 +54,13 @@
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var _greeting = __webpack_require__(158);
+	var _viewport = __webpack_require__(160);
 
-	var _greeting2 = _interopRequireDefault(_greeting);
+	var _viewport2 = _interopRequireDefault(_viewport);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	_reactDom2.default.render(_react2.default.createElement(_greeting2.default, { name: "World" }), document.getElementById('app'));
+	_reactDom2.default.render(_react2.default.createElement(_viewport2.default, { name: "World" }), document.getElementById('app'));
 
 /***/ },
 /* 1 */
@@ -19630,7 +19630,17 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
-/* 158 */
+/* 158 */,
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	module.exports = __webpack_require__(3);
+
+
+/***/ },
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -19643,28 +19653,64 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
+	var _steps = __webpack_require__(161);
+
+	var _steps2 = _interopRequireDefault(_steps);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	exports.default = _react2.default.createClass({
+	  getInitialState: function getInitialState() {
+	    return { currentStep: 1 };
+	  },
+
 	  render: function render() {
 	    return _react2.default.createElement(
 	      "div",
-	      { className: "greeting" },
-	      "Hello, ",
-	      this.props.name,
-	      "!"
+	      { className: "viewport" },
+	      _react2.default.createElement(_steps2.default, { currentStep: this.state.currentStep })
 	    );
 	  }
 	});
 
 /***/ },
-/* 159 */
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	module.exports = __webpack_require__(3);
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
 
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var steps = ['Accept video/audio recording', 'Position your face', 'Start recording'];
+
+	exports.default = _react2.default.createClass({
+	  render: function render() {
+	    debugger;
+	    return _react2.default.createElement(
+	      'div',
+	      { className: 'steps' },
+	      _react2.default.createElement(
+	        'ul',
+	        null,
+	        steps.map(function (step, i) {
+	          return _react2.default.createElement(
+	            'li',
+	            { key: i },
+	            step
+	          );
+	        })
+	      )
+	    );
+	  }
+	});
 
 /***/ }
 /******/ ]);

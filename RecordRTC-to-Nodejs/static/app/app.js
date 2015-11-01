@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import Greeting from "./greeting";
+import Viewport from "./viewport";
 
 ReactDOM.render(
-  <Greeting name="World"/>,
+  <Viewport name="World"/>,
     document.getElementById('app')
     );
