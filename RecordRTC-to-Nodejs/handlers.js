@@ -79,6 +79,7 @@ function serveStatic(response, pathname) {
             'mp4': 'video/mp4',
             'wav': 'audio/wav',
             'ogg': 'audio/ogg',
+            'mp3': 'audio/mp3',
             'gif': 'image/gif'
         };
 

@@ -50,15 +50,15 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _reactDom = __webpack_require__(159);
+	var _reactDom = __webpack_require__(158);
 
 	var _reactDom2 = _interopRequireDefault(_reactDom);
 
-	var _viewport = __webpack_require__(160);
+	var _viewport = __webpack_require__(159);
 
 	var _viewport2 = _interopRequireDefault(_viewport);
 
-	var _metronome = __webpack_require__(162);
+	var _metronome = __webpack_require__(161);
 
 	var _metronome2 = _interopRequireDefault(_metronome);
 
@@ -4409,11 +4409,12 @@
 	    var fakeNode = document.createElement('react');
 	    ReactErrorUtils.invokeGuardedCallback = function (name, func, a, b) {
 	      var boundFunc = func.bind(null, a, b);
-	      fakeNode.addEventListener(name, boundFunc, false);
+	      var evtType = 'react-' + name;
+	      fakeNode.addEventListener(evtType, boundFunc, false);
 	      var evt = document.createEvent('Event');
-	      evt.initEvent(name, false, false);
+	      evt.initEvent(evtType, false, false);
 	      fakeNode.dispatchEvent(evt);
-	      fakeNode.removeEventListener(name, boundFunc, false);
+	      fakeNode.removeEventListener(evtType, boundFunc, false);
 	    };
 	  }
 	}
@@ -5008,7 +5009,7 @@
 	var canDefineProperty = false;
 	if (process.env.NODE_ENV !== 'production') {
 	  try {
-	    Object.defineProperty({}, 'x', {});
+	    Object.defineProperty({}, 'x', { get: function () {} });
 	    canDefineProperty = true;
 	  } catch (x) {
 	    // IE will fail on defineProperty
@@ -10442,6 +10443,7 @@
 	    icon: null,
 	    id: MUST_USE_PROPERTY,
 	    inputMode: MUST_USE_ATTRIBUTE,
+	    integrity: null,
 	    is: MUST_USE_ATTRIBUTE,
 	    keyParams: MUST_USE_ATTRIBUTE,
 	    keyType: MUST_USE_ATTRIBUTE,
@@ -10801,6 +10803,7 @@
 	// For quickly matching children type, to test if can be treated as content.
 	var CONTENT_TYPES = { 'string': true, 'number': true };
 
+	var CHILDREN = keyOf({ children: null });
 	var STYLE = keyOf({ style: null });
 	var HTML = keyOf({ __html: null });
 
@@ -11291,7 +11294,9 @@
 	        }
 	        var markup = null;
 	        if (this._tag != null && isCustomComponent(this._tag, props)) {
-	          markup = DOMPropertyOperations.createMarkupForCustomAttribute(propKey, propValue);
+	          if (propKey !== CHILDREN) {
+	            markup = DOMPropertyOperations.createMarkupForCustomAttribute(propKey, propValue);
+	          }
 	        } else {
 	          markup = DOMPropertyOperations.createMarkupForProperty(propKey, propValue);
 	        }
@@ -11550,6 +11555,9 @@
 	      } else if (isCustomComponent(this._tag, nextProps)) {
 	        if (!node) {
 	          node = ReactMount.getNode(this._rootNodeID);
+	        }
+	        if (propKey === CHILDREN) {
+	          nextProp = null;
 	        }
 	        DOMPropertyOperations.setValueForAttribute(node, propKey, nextProp);
 	      } else if (DOMProperty.properties[propKey] || DOMProperty.isCustomAttribute(propKey)) {
@@ -18671,7 +18679,7 @@
 
 	'use strict';
 
-	module.exports = '0.14.1';
+	module.exports = '0.14.2';
 
 /***/ },
 /* 147 */
@@ -19634,8 +19642,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(4)))
 
 /***/ },
-/* 158 */,
-/* 159 */
+/* 158 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -19644,7 +19651,7 @@
 
 
 /***/ },
-/* 160 */
+/* 159 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -19657,7 +19664,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _steps = __webpack_require__(161);
+	var _steps = __webpack_require__(160);
 
 	var _steps2 = _interopRequireDefault(_steps);
 
@@ -19678,7 +19685,7 @@
 	});
 
 /***/ },
-/* 161 */
+/* 160 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -19721,290 +19728,73 @@
 	});
 
 /***/ },
-/* 162 */
-/***/ function(module, exports, __webpack_require__) {
+/* 161 */
+/***/ function(module, exports) {
 
-	"use strict";
-
-	var _webAudioScheduler = __webpack_require__(163);
-
-	var _webAudioScheduler2 = _interopRequireDefault(_webAudioScheduler);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	'use strict';
 
 	var audioContext = new AudioContext();
-	var scheduler = new _webAudioScheduler2.default({
-	  context: audioContext
-	});
+	var tempo = 60.0;
+	var futureTickTime = 0.0;
+	var timerID = 0;
+	var shouldPlay = false;
 
-	function metronome(e) {
-	  scheduler.insert(e.playbackTime + 0.000, ticktack, [880, 1.00]);
-	  scheduler.insert(e.playbackTime + 1.000, ticktack, [880, 1.00]);
-	  scheduler.insert(e.playbackTime + 2.000, metronome);
-	}
+	function audioFileLoader(filename) {
+	  var soundObj = {};
+	  soundObj.filename = filename;
 
-	function ticktack(e, freq, dur) {
-	  var t0 = e.playbackTime;
-	  var t1 = t0 + dur;
-	  var osc = audioContext.createOscillator();
-	  var amp = audioContext.createGain();
-
-	  osc.frequency.value = freq;
-	  amp.gain.setValueAtTime(0.5, t0);
-	  amp.gain.exponentialRampToValueAtTime(1e-6, t1);
-
-	  osc.start(t0);
-
-	  osc.connect(amp);
-	  amp.connect(audioContext.destination);
-
-	  scheduler.insert(t1, function (e) {
-	    osc.stop(e.playbackTime);
-	    scheduler.nextTick(function () {
-	      osc.disconnect();
-	      amp.disconnect();
+	  var getSound = new XMLHttpRequest();
+	  getSound.open('GET', soundObj.filename, true);
+	  getSound.responseType = 'arraybuffer';
+	  getSound.onload = function () {
+	    audioContext.decodeAudioData(getSound.response, function (buffer) {
+	      soundObj.soundToPlay = buffer;
 	    });
-	  });
+	  };
+
+	  getSound.send();
+
+	  soundObj.play = function () {
+	    var playSound = audioContext.createBufferSource();
+	    playSound.buffer = soundObj.soundToPlay;
+	    playSound.connect(audioContext.destination);
+	    playSound.start(audioContext.currentTime);
+	    playSound.stop(audioContext.currentTime + .5);
+	  };
+
+	  return soundObj;
 	}
+
+	var vase = audioFileLoader('/blue.mp3');
 
 	function start() {
-	  scheduler.start(metronome);
+	  shouldPlay = true;
 	}
 
 	function stop() {
-	  scheduler.stop(true);
+	  shouldPlay = false;
 	}
+
 	window.startMetronome = function () {
 	  setTimeout(start, 500);
 	};
 	window.stopMetronome = stop;
-	//start();
 
-/***/ },
-/* 163 */
-/***/ function(module, exports) {
+	function scheduler() {
+	  while (futureTickTime < audioContext.currentTime + 0.1) {
+	    if (shouldPlay) {
+	      vase.play();
+	    }
 
-	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
-
-	var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
-
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	"use strict";
-
-	var AudioContext = global.AudioContext || global.webkitAudioContext;
-
-	function defaults(value, defaultValue) {
-	  return value !== undefined ? value : defaultValue;
-	}
-
-	/**
-	 * @class WebAudioScheduler
-	 */
-
-	var WebAudioScheduler = (function () {
-	  /**
-	   * @constructor
-	   * @param {object} opts
-	   * @public
-	   */
-
-	  function WebAudioScheduler() {
-	    var opts = arguments[0] === undefined ? {} : arguments[0];
-
-	    _classCallCheck(this, WebAudioScheduler);
-
-	    this.context = opts.context || new AudioContext();
-	    this.interval = +defaults(opts.interval, 0.025);
-	    this.aheadTime = +defaults(opts.aheadTime, 0.1);
-	    this.offsetTime = +defaults(opts.offsetTime, 0.005);
-	    this.timerAPI = defaults(opts.timerAPI, global);
-	    this.toSeconds = defaults(opts.toSeconds, function (value) {
-	      return +value;
-	    });
-	    this.playbackTime = 0;
-
-	    this._timerId = 0;
-	    this._schedId = 0;
-	    this._events = [];
+	    var secondsPerBeat = 60.0 / tempo;
+	    futureTickTime += 0.25 + secondsPerBeat;
 	  }
 
-	  _createClass(WebAudioScheduler, [{
-	    key: "currentTime",
+	  timerID = window.setTimeout(scheduler, 50.0);
+	}
 
-	    /**
-	    * Current time of the audio context
-	    * @type {number}
-	    * @public
-	    */
-	    get: function () {
-	      return this.context.currentTime;
-	    }
-	  }, {
-	    key: "events",
-
-	    /**
-	     * Sorted list of scheduled items
-	     * @type {object[]}
-	     * @public
-	     */
-	    get: function () {
-	      return this._events.slice();
-	    }
-	  }, {
-	    key: "start",
-
-	    /**
-	     * Start the scheduler timeline.
-	     * @param {function} callback
-	     * @return {WebAudioScheduler} self
-	     * @public
-	     */
-	    value: function start(callback) {
-	      var _this = this;
-
-	      if (this._timerId === 0) {
-	        this._timerId = this.timerAPI.setInterval(function () {
-	          var t0 = _this.context.currentTime;
-	          var t1 = t0 + _this.aheadTime;
-
-	          _this._process(t0, t1);
-	        }, this.interval * 1000);
-	      }
-	      if (callback) {
-	        this.insert(0, callback);
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: "stop",
-
-	    /**
-	     * Stop the scheduler timeline.
-	     * @param {boolean} reset
-	     * @return {WebAudioScheduler} self
-	     * @public
-	     */
-	    value: function stop(reset) {
-	      if (this._timerId !== 0) {
-	        this.timerAPI.clearInterval(this._timerId);
-	        this._timerId = 0;
-	      }
-	      if (reset) {
-	        this._events.splice(0);
-	      }
-	      return this;
-	    }
-	  }, {
-	    key: "insert",
-
-	    /**
-	     * Insert the callback function into the scheduler timeline.
-	     * @param {number} time
-	     * @param {function(object)} callback
-	     * @param {*[]} args
-	     * @return {number} schedId
-	     * @public
-	     */
-	    value: function insert(time, callback, args) {
-	      time = this.toSeconds(time, this);
-
-	      this._schedId += 1;
-
-	      var event = {
-	        id: this._schedId,
-	        time: time,
-	        callback: callback,
-	        args: args
-	      };
-	      var events = this._events;
-
-	      if (events.length === 0 || events[events.length - 1].time <= time) {
-	        events.push(event);
-	      } else {
-	        for (var i = 0, imax = events.length; i < imax; i++) {
-	          if (time < events[i].time) {
-	            events.splice(i, 0, event);
-	            break;
-	          }
-	        }
-	      }
-
-	      return event.id;
-	    }
-	  }, {
-	    key: "nextTick",
-
-	    /**
-	     * Insert the callback function at next tick.
-	     * @param {function(object)} callback
-	     * @param {*[]} args
-	     * @return {number} schedId
-	     * @public
-	     */
-	    value: function nextTick(callback, args) {
-	      return this.insert(this.playbackTime + this.aheadTime, callback, args);
-	    }
-	  }, {
-	    key: "remove",
-
-	    /**
-	     * Remove the callback function from the scheduler timeline.
-	     * @param {number} schedId
-	     * @return {number} schedId
-	     * @public
-	     */
-	    value: function remove(schedId) {
-	      var events = this._events;
-
-	      if (typeof schedId === "undefined") {
-	        events.splice(0);
-	      } else {
-	        for (var i = 0, imax = events.length; i < imax; i++) {
-	          if (schedId === events[i].id) {
-	            events.splice(i, 1);
-	            break;
-	          }
-	        }
-	      }
-
-	      return schedId;
-	    }
-	  }, {
-	    key: "_process",
-
-	    /**
-	     * @private
-	     */
-	    value: function _process(t0, t1) {
-	      var events = this._events;
-
-	      this.playbackTime = t0;
-
-	      while (events.length && events[0].time < t1) {
-	        var _event = events.shift();
-
-	        this.playbackTime = Math.max(this.context.currentTime, _event.time) + this.offsetTime;
-
-	        _event.callback.apply(this, [{
-	          target: this,
-	          playbackTime: this.playbackTime
-	        }].concat(_event.args));
-	      }
-
-	      this.playbackTime = t0;
-	    }
-	  }]);
-
-	  return WebAudioScheduler;
-	})();
-
-	exports["default"] = WebAudioScheduler;
-	module.exports = exports["default"];
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+	scheduler();
+	//start();
 
 /***/ }
 /******/ ]);

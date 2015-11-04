@@ -1,48 +1,64 @@
-import WebAudioScheduler from "web-audio-scheduler";
 var audioContext = new AudioContext();
-var scheduler = new WebAudioScheduler({
-  context: audioContext
-});
+var tempo = 60.0;
+var futureTickTime = 0.0;
+var timerID = 0;
+var shouldPlay = false;
 
-function metronome(e) {
-  scheduler.insert(e.playbackTime + 0.000, ticktack, [ 880, 1.00 ]);
-  scheduler.insert(e.playbackTime + 1.000, ticktack, [ 880, 1.00 ]);
-  scheduler.insert(e.playbackTime + 2.000, metronome);
-}
+function audioFileLoader(filename){
+  var soundObj = {};
+  soundObj.filename = filename;
 
-function ticktack(e, freq, dur) {
-  var t0 = e.playbackTime;
-  var t1 = t0 + dur;
-  var osc = audioContext.createOscillator();
-  var amp = audioContext.createGain();
-
-  osc.frequency.value = freq;
-  amp.gain.setValueAtTime(0.5, t0);
-  amp.gain.exponentialRampToValueAtTime(1e-6, t1);
-
-  osc.start(t0);
-
-  osc.connect(amp);
-  amp.connect(audioContext.destination);
-
-  scheduler.insert(t1, function(e) {
-    osc.stop(e.playbackTime);
-    scheduler.nextTick(function() {
-      osc.disconnect();
-      amp.disconnect();
+  var getSound = new XMLHttpRequest();
+  getSound.open('GET', soundObj.filename, true);
+  getSound.responseType = 'arraybuffer';
+  getSound.onload = function(){
+    audioContext.decodeAudioData(getSound.response, function(buffer){
+      soundObj.soundToPlay = buffer;
     });
-  });
+  }
+
+  getSound.send();
+
+  soundObj.play = function(){
+    var playSound = audioContext.createBufferSource();
+    playSound.buffer = soundObj.soundToPlay;
+    playSound.connect(audioContext.destination);
+    playSound.start(audioContext.currentTime);
+    playSound.stop(audioContext.currentTime + .5);
+  }
+
+  return soundObj;
 }
 
-function start() {
-  scheduler.start(metronome);
+var vase = audioFileLoader('/blue.mp3');
+
+function start(){
+  shouldPlay = true;
 }
 
-function stop() {
-  scheduler.stop(true);
+function stop(){
+  shouldPlay = false;
 }
+
 window.startMetronome = function(){
   setTimeout(start, 500);
 }
 window.stopMetronome = stop;
+
+function scheduler(){
+  while (futureTickTime < audioContext.currentTime + 0.1){
+    if(shouldPlay){
+      vase.play();
+    }
+
+    var secondsPerBeat = 60.0 / tempo;
+    futureTickTime += 0.25 + secondsPerBeat;
+
+
+  }
+  
+  timerID = window.setTimeout(scheduler, 50.0);
+}
+
+scheduler();
 //start();

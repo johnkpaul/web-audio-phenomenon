@@ -18,6 +18,7 @@ function route(handle, pathname, response, postData) {
         webm: 'webm',
         mp4: 'mp4',
         wav: 'wav',
+        mp3: 'mp3',
         ogg: 'ogg'
     };
 
