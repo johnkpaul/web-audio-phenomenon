@@ -30,14 +30,19 @@ function audioFileLoader(filename){
   return soundObj;
 }
 
-var vase = audioFileLoader('/blue.mp3');
+var vase = audioFileLoader('/vase.wav');
+var base = audioFileLoader('/base.wav');
 
+var first = true;
 function start(){
   shouldPlay = true;
 }
 
 function stop(){
   shouldPlay = false;
+  if(first == true){
+     first = false;
+  }
 }
 
 window.startMetronome = function(){
@@ -48,7 +53,7 @@ window.stopMetronome = stop;
 function scheduler(){
   while (futureTickTime < audioContext.currentTime + 0.1){
     if(shouldPlay){
-      vase.play();
+      first ? vase.play() : base.play();
     }
 
     var secondsPerBeat = 60.0 / tempo;
